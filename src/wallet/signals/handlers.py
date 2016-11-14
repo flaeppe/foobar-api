@@ -15,3 +15,16 @@ def update_wallet_balance(sender, instance, created, **kwargs):
         # the wallet balance.
         wallet_obj.balance = wallet_obj.transactions.balance()
     wallet_obj.save()
+
+
+@receiver(post_save, sender=models.WalletTransaction)
+def update_pre_balance2(sender, instance, created, **kwargs):
+    trxs = instance.wallet.transactions.pending_or_finalized()
+    trxs = trxs.filter(date_created__gt=instance.date_created)
+    trxs = trxs.order_by('date_created')
+
+    balance = instance.pre_balance + instance.signed_amount
+    for trx in trxs:
+        trx.pre_balance = balance
+        trx.save()
+        balance += trx.signed_amount

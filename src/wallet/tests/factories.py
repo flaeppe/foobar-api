@@ -21,6 +21,7 @@ class WalletTrxFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.WalletTransaction
 
+    id = None
     wallet = factory.SubFactory(WalletFactory)
     amount = FuzzyMoney(0, 100000)
     trx_type = enums.TrxType.INCOMING

@@ -210,3 +210,28 @@ class WalletTest(TestCase):
         total = api.total_balance(wallet_obj1.currency,
                                   exclude_ids=[wallet_obj1.owner_id])
         self.assertEqual(total, Money(400, wallet_obj1.currency))
+
+    def test_pre_balance(self):
+        wallet_obj1 = factories.WalletFactory.create()
+        self.assertEqual(wallet_obj1.balance,
+                         Money(0, wallet_obj1.currency))
+        trx_obj1 = factories.WalletTrxFactory.create(
+            wallet=wallet_obj1,
+            trx_status=enums.TrxStatus.FINALIZED,
+            trx_type=enums.TrxType.INCOMING,
+            amount=Money(100, wallet_obj1.currency)
+        )
+        self.assertEqual(trx_obj1.pre_balance,
+                         Money(0, wallet_obj1.currency))
+        trx_obj2 = factories.WalletTrxFactory.create(
+            wallet=wallet_obj1,
+            trx_status=enums.TrxStatus.FINALIZED,
+            trx_type=enums.TrxType.INCOMING,
+            amount=Money(500, wallet_obj1.currency)
+        )
+        self.assertEqual(trx_obj2.pre_balance,
+                         Money(100, wallet_obj1.currency))
+        api.cancel_transaction(trx_obj1.id)
+        trx_obj2.refresh_from_db()
+        self.assertEqual(trx_obj2.pre_balance,
+                         Money(0, wallet_obj1.currency))

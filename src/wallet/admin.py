@@ -37,6 +37,20 @@ class WalletTransactionCreatorInline(admin.TabularInline):
         return False
 
 
+@admin.register(models.WalletTransaction)
+class WalletTransactionAdmin(ReadOnlyMixin, admin.ModelAdmin):
+    list_display = ('id', 'wallet', 'trx_type', 'trx_status', '_amount',)
+    readonly_fields = ('id', 'wallet', 'trx_type', 'trx_status', 'amount',
+                       'reference',)
+    list_filter = ('trx_type', 'trx_status',)
+
+    def _amount(self, obj):
+        # An ugly trick to force the Django admin to format the money
+        # field properly.
+        return obj.amount
+    _amount.admin_order_field = 'amount'
+
+
 @admin.register(models.Wallet)
 class WalletAdmin(ReadOnlyMixin, admin.ModelAdmin):
     list_display = ('owner_id', '_balance',)
@@ -62,6 +76,7 @@ class WalletAdmin(ReadOnlyMixin, admin.ModelAdmin):
         # An ugly trick to force the Django admin to format the money
         # field properly.
         return obj.balance
+    _balance.admin_order_field = 'balance'
 
     class Media:
         css = {'all': ('css/hide_admin_original.css',)}

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 from djmoney.models.fields import MoneyField
 from moneyed import Money
 from bananas.models import TimeStampedModel, UUIDModel
@@ -8,8 +9,9 @@ from . import enums
 
 
 class WalletQuerySet(models.QuerySet):
-    def sum(self, currency=None):
-        amount = self.aggregate(balance=models.Sum('balance'))['balance']
+    def sum(self, currency=None, **kwargs):
+        qs = self.filter(**kwargs)
+        amount = qs.aggregate(balance=models.Sum('balance'))['balance']
         return Money(amount or 0, currency or settings.DEFAULT_CURRENCY)
 
 
@@ -30,6 +32,9 @@ class Wallet(UUIDModel):
     @property
     def currency(self):
         return self.balance_currency
+
+    def __str__(self):
+        return '{o.id}'.format(o=self)
 
 
 class WalletTrxsQuerySet(models.QuerySet):
@@ -53,9 +58,10 @@ class WalletTrxsQuerySet(models.QuerySet):
         amount = self.aggregate(amount=models.Sum('amount'))['amount']
         return Money(amount or 0, currency or settings.DEFAULT_CURRENCY)
 
-    def balance(self, currency=None):
-        incoming = self.finalized().incoming().sum(currency)
-        outgoing = self.pending_or_finalized().outgoing().sum(currency)
+    def balance(self, currency=None, **kwargs):
+        qs = self.filter(**kwargs)
+        incoming = qs.finalized().incoming().sum(currency)
+        outgoing = qs.pending_or_finalized().outgoing().sum(currency)
         return incoming - outgoing
 
 
@@ -71,7 +77,26 @@ class WalletTransaction(UUIDModel, TimeStampedModel):
                                   default=enums.TrxStatus.FINALIZED)
     reference = models.CharField(max_length=128, blank=True, null=True)
 
+    pre_balance = MoneyField(
+        default=Money(0, settings.DEFAULT_CURRENCY),
+        max_digits=10,
+        decimal_places=2,
+        default_currency=settings.DEFAULT_CURRENCY
+    )
+
     objects = WalletTrxsQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = _('Transaction')
+
+    def save(self, *args, **kwargs):
+        if self.date_created is None:
+            self.pre_balance = self.wallet.balance
+        else:
+            self.pre_balance = self.wallet.transactions.balance(
+                date_created__lt=self.date_created
+            )
+        super().save(*args, **kwargs)
 
     @property
     def signed_amount(self):
