@@ -44,7 +44,6 @@ class WalletAdmin(ReadOnlyMixin, admin.ModelAdmin):
     readonly_fields = ('owner_id', 'balance',)
     inlines = (
         WalletTransactionCreatorInline,
-        WalletTransactionViewerInline,
     )
     fieldsets = (
         (None, {
