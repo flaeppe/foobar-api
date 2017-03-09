@@ -85,7 +85,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.purchase(account_obj.id, products)
+        purchase_obj = api.create_purchase(account_obj.id, products)
         self.assertEqual(purchase_obj.amount, Money(69, 'SEK'))
         product_obj1.refresh_from_db()
         product_obj2.refresh_from_db()
@@ -118,7 +118,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.purchase(account_obj.id, products)
+        purchase_obj = api.create_purchase(account_obj.id, products)
         api.cancel_purchase(purchase_obj.id)
         purchase_obj, _ = api.get_purchase(purchase_obj.id)
         self.assertEqual(purchase_obj.status, enums.PurchaseStatus.CANCELED)
@@ -146,7 +146,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.purchase(None, products)
+        purchase_obj = api.create_purchase(None, products)
         api.cancel_purchase(purchase_obj.id)
         purchase_obj, _ = api.get_purchase(purchase_obj.id)
         self.assertEqual(purchase_obj.status, enums.PurchaseStatus.CANCELED)
@@ -172,7 +172,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        api.purchase(None, products)
+        api.create_purchase(None, products)
         product_obj1.refresh_from_db()
         product_obj2.refresh_from_db()
         self.assertEqual(product_obj1.qty, -3)
@@ -196,7 +196,7 @@ class FoobarAPITest(TestCase):
         products = [
             (product_obj1.id, 3),
         ]
-        purchase_obj = api.purchase(account_obj.id, products)
+        purchase_obj = api.create_purchase(account_obj.id, products)
         obj = api.get_purchase(purchase_obj.id)
         self.assertIsNotNone(obj)
 
@@ -216,7 +216,7 @@ class FoobarAPITest(TestCase):
         products = [
             (product_obj1.id, 3),
         ]
-        api.purchase(account_obj.id, products)
+        api.create_purchase(account_obj.id, products)
         objs = api.list_purchases(account_obj.id)
         self.assertEqual(len(objs), 1)
 
@@ -318,3 +318,44 @@ class FoobarAPITest(TestCase):
         self.assertEqual(correction_obj.amount.amount, 0)
         _, balance = wallet_api.get_balance(wallet_obj.owner_id)
         self.assertEqual(balance.amount, 1050)
+
+    def test_finalize_pending_purchase(self):
+        account_obj = AccountFactory.create()
+        wallet_obj = WalletFactory.create(owner_id=account_obj.id)
+        WalletTrxFactory.create(
+            wallet=wallet_obj,
+            amount=Money(1000, 'SEK'),
+            trx_type=TrxType.FINALIZED
+        )
+        product_obj1 = ProductFactory.create(
+            code='8437438439393',
+            name='Fat',
+            price=Money(42, 'SEK')
+        )
+        products = [(product_obj1.pk, 3)]
+
+        pending_obj = api.create_purchase(
+            account_id=account_obj.pk,
+            products=products
+        )
+
+        self.assertIsNotNone(pending_obj.status)
+        self.assertEqual(pending_obj.status, enums.PurchaseStatus.PENDING)
+        self.assertEqual(pending_obj.states.count(), 1)
+        self.assertEqual(pending_obj.account.pk, account_obj.pk)
+        self.assertEqual(pending_obj.amount.amount, 126)
+
+        finalized_obj = api.finalize_purchase(purchase_id=pending_obj.pk)
+
+        self.assertIsNotNone(finalized_obj.status)
+        self.assertEqual(finalized_obj.status, enums.PurchaseStatus.FINALIZED)
+        self.assertEqual(finalized_obj.states.count(), 2)
+        self.assertEqual(finalized_obj.account.pk, account_obj.pk)
+        self.assertEqual(finalized_obj.amount.amount, 126)
+
+        self.assertEqual(finalized_obj.items.count(), 1)
+        item = finalized_obj.items.first()
+
+        self.assertEqual(item.qty, 3)
+        self.assertEqual(item.amount.amount, 42)
+        self.assertEqual(item.product_id, product_obj1.pk)
