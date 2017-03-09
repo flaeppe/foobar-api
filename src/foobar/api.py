@@ -2,7 +2,9 @@ from django.conf import settings
 from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
-from .models import Account, Card, Purchase, PurchaseItem, WalletLogEntry
+from .models import (
+    Account, Card, Purchase, PurchaseItem, WalletLogEntry
+)
 from foobar.wallet import api as wallet_api
 from shop import api as shop_api
 from shop import enums as shop_enums
@@ -41,7 +43,7 @@ def update_account(account_id, **kwargs):
 
 
 @transaction.atomic
-def purchase(account_id, products):
+def create_purchase(account_id, products):
     """
     Products should be a list of tuples containing paiars of product ids
     and their quantities. If account_id is None, a cash purchase will be made -
@@ -52,7 +54,10 @@ def purchase(account_id, products):
         account_obj = Account.objects.get(id=account_id)
     else:
         account_obj = None
+
     purchase_obj = Purchase.objects.create(account=account_obj)
+    purchase_obj.states.create(status=enums.PurchaseStatus.PENDING)
+
     products = [(shop_api.get_product(p), q) for p, q in products]
     # make sure the quantites are greater than 0
     assert all(q > 0 for _, q in products)
@@ -89,13 +94,18 @@ def purchase(account_id, products):
     return purchase_obj
 
 
-def get_purchase(purchase_id):
-    """Returns a purchase together with the purhcased items in it."""
-    try:
-        purchase_obj = Purchase.objects.get(id=purchase_id)
-        return purchase_obj, purchase_obj.items.all()
-    except Purchase.DoesNotExist:
-        return None
+@transaction.atomic
+def finalize_purchase(purchase_id):
+    pending_obj = Purchase.objects.get(pk=purchase_id)
+    pending_obj.set_status(enums.PurchaseStatus.FINALIZED)
+
+    for item_trx_obj in pending_obj.items.all():
+        trx_objs = shop_api.get_product_transactions_by_ref(item_trx_obj)
+        # Only one transaction with given reference should exist
+        assert len(trx_objs) == 1
+        shop_api.finalize_product_transaction(trx_objs[0].pk)
+
+    return pending_obj
 
 
 @transaction.atomic
@@ -103,9 +113,9 @@ def cancel_purchase(purchase_id, force=False):
     purchase_obj = Purchase.objects.get(id=purchase_id)
     if not force and not purchase_obj.deletable:
         raise NotCancelableException(_('The purchase cannot be canceled.'))
-    assert purchase_obj.status == enums.PurchaseStatus.FINALIZED
-    purchase_obj.status = enums.PurchaseStatus.CANCELED
-    purchase_obj.save()
+
+    purchase_obj.set_status(enums.PurchaseStatus.CANCELED)
+
     # Cancel related shop item transactions
     for item_trx_obj in purchase_obj.items.all():
         trx_objs = shop_api.get_product_transactions_by_ref(item_trx_obj)
@@ -120,6 +130,15 @@ def cancel_purchase(purchase_id, force=False):
             purchase_obj.account is None and len(trx_objs) == 1)
     for trx_obj in trx_objs:
         wallet_api.cancel_transaction(trx_obj.id)
+
+
+def get_purchase(purchase_id):
+    """Returns a purchase together with the purchased items in it."""
+    try:
+        purchase_obj = Purchase.objects.get(id=purchase_id)
+        return purchase_obj, purchase_obj.items.all()
+    except Purchase.DoesNotExist:
+        return None
 
 
 def list_purchases(account_id, start=None, stop=None, **kwargs):
