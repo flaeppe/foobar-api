@@ -303,7 +303,7 @@ class ProductTransaction(UUIDModel, TimeStampedModel):
         state = self.states.latest('date_created')
         return state.status if state is not None else state
 
-    def set_status(self, status):
+    def set_status(self, status, reference=None):
         state = self.states.latest('date_created')
         # A product transaction should never not be in a state
         assert state is not None
@@ -313,10 +313,14 @@ class ProductTransaction(UUIDModel, TimeStampedModel):
             from_state=state.status,
             to_state=status
         )
+
+        ct = None
+        if reference is not None:
+            ct = ContentType.objects.get_for_model(reference)
         self.states.create(
             status=status,
-            reference_ct=state.reference_ct,
-            reference_id=state.reference_id
+            reference_ct=ct,
+            reference_id=reference.pk if reference is not None else None
         )
 
     class Meta:

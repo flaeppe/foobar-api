@@ -77,15 +77,15 @@ def create_product_transaction(product_id, trx_type, qty, reference=None):
 
 
 @transaction.atomic
-def finalize_product_transaction(trx_id):
+def finalize_product_transaction(trx_id, reference=None):
     trx_obj = models.ProductTransaction.objects.get(pk=trx_id)
-    trx_obj.set_status(enums.TrxStatus.FINALIZED)
+    trx_obj.set_status(enums.TrxStatus.FINALIZED, reference)
 
 
 @transaction.atomic
-def cancel_product_transaction(trx_id):
+def cancel_product_transaction(trx_id, reference=None):
     trx_obj = models.ProductTransaction.objects.get(id=trx_id)
-    trx_obj.set_status(enums.TrxStatus.CANCELED)
+    trx_obj.set_status(enums.TrxStatus.CANCELED, reference)
 
 
 def list_products(start=None, limit=None, **kwargs):

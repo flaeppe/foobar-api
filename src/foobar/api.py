@@ -96,16 +96,19 @@ def create_purchase(account_id, products):
 
 @transaction.atomic
 def finalize_purchase(purchase_id):
-    pending_obj = Purchase.objects.get(pk=purchase_id)
-    pending_obj.set_status(enums.PurchaseStatus.FINALIZED)
+    purchase_obj = Purchase.objects.get(pk=purchase_id)
+    purchase_obj.set_status(enums.PurchaseStatus.FINALIZED)
 
-    for item_trx_obj in pending_obj.items.all():
+    for item_trx_obj in purchase_obj.items.all():
         trx_objs = shop_api.get_product_transactions_by_ref(item_trx_obj)
         # Only one transaction with given reference should exist
         assert len(trx_objs) == 1
-        shop_api.finalize_product_transaction(trx_objs[0].pk)
+        shop_api.finalize_product_transaction(
+            trx_id=trx_objs[0].pk,
+            reference=purchase_obj
+        )
 
-    return pending_obj
+    return purchase_obj
 
 
 @transaction.atomic
@@ -115,13 +118,15 @@ def cancel_purchase(purchase_id, force=False):
         raise NotCancelableException(_('The purchase cannot be canceled.'))
 
     purchase_obj.set_status(enums.PurchaseStatus.CANCELED)
-
     # Cancel related shop item transactions
     for item_trx_obj in purchase_obj.items.all():
         trx_objs = shop_api.get_product_transactions_by_ref(item_trx_obj)
         # Only one transaction with given reference should exist
         assert len(trx_objs) == 1
-        shop_api.cancel_product_transaction(trx_objs[0].id)
+        shop_api.cancel_product_transaction(
+            trx_id=trx_objs[0].id,
+            reference=purchase_obj.account
+        )
     # Cancel related wallet transactions
     trx_objs = wallet_api.get_transactions_by_ref(purchase_obj.id)
     # Exactly two transactions (withdrawal + deposit) with given reference
