@@ -42,7 +42,7 @@ class WalletTransactionCreatorInline(admin.TabularInline):
 class WalletTransactionAdmin(admin.ModelAdmin):
     list_display = ('id', 'trx_type', 'amount', 'reference', 'date_created')
     readonly_fields = list_display
-    list_filter = ('trx_type',)
+    # list_filter = ('trx_type',)
     exclude = ('wallet',)
     ordering = ('-date_created',)
     verbose_name = _('Transaction')
