@@ -1,11 +1,16 @@
+from unittest import mock
 from django.core.urlresolvers import reverse_lazy as reverse
 from django.conf import settings
 from rest_framework import status
 from shop.tests.factories import ProductFactory
-from wallet.tests.factories import WalletFactory, WalletTrxFactory
+from wallet.tests.factories import (
+    finalize_trx,
+    WalletFactory,
+    WalletTrxFactory
+)
 from wallet import api as wallet_api
 from foobar.rest.fields import MoneyField
-from ..factories import AccountFactory
+from ..factories import AccountFactory, PurchaseFactory
 from .base import AuthenticatedAPITestCase
 from moneyed import Money
 
@@ -17,16 +22,18 @@ def serialize_money(x):
 class TestPurchaseAPI(AuthenticatedAPITestCase):
 
     def setUp(self):
+        mock
+        PurchaseFactory
         super().setUp()
         self.force_authenticate()
 
     def test_purchase(self):
         account_obj = AccountFactory.create()
         wallet_obj = WalletFactory.create(owner_id=account_obj.id)
-        WalletTrxFactory.create(
+        finalize_trx(WalletTrxFactory.create(
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
-        )
+        ))
         product_obj1 = ProductFactory.create(
             name='Billys Ooriginal',
             price=Money(13, 'SEK')
