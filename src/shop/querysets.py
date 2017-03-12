@@ -15,6 +15,7 @@ class ProductTrxQuerySet(models.QuerySet):
         ])
 
     def finalized(self):
+        # Filter out the latest status timestamps for every transaction
         stamps = self.annotate(
             latest_stamp=models.Max('states__date_created')
         ).values_list('latest_stamp', flat=True)

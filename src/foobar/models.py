@@ -59,13 +59,12 @@ class Purchase(UUIDModel, TimeStampedModel):
 
     @property
     def status(self):
+        # As a purchase should never _not_ be in a state, we want
+        # latest to throw an exception when this does not happen
         state = self.states.latest('date_created')
-        return state.status if state is not None else state
+        return state.status
 
     def set_status(self, status):
-        # A purchase should never not be in a state
-        assert self.status is not None
-
         validate_transition(
             enums.PurchaseStatus,
             from_state=self.status,
@@ -93,6 +92,7 @@ class PurchaseStatus(UUIDModel, TimeStampedModel):
     purchase = models.ForeignKey('Purchase', related_name='states')
 
     class Meta:
+        ordering = ('-date_created',)
         verbose_name = _('purchase status')
         verbose_name_plural = _('purchase statuses')
 

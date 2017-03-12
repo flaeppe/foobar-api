@@ -300,17 +300,15 @@ class ProductTransaction(UUIDModel, TimeStampedModel):
 
     @property
     def trx_status(self):
+        # As a transaction should never _not_ be in a state, we want
+        # latest to throw an exception when this does not happen
         state = self.states.latest('date_created')
-        return state.status if state is not None else state
+        return state.status
 
     def set_status(self, status, reference=None):
-        state = self.states.latest('date_created')
-        # A product transaction should never not be in a state
-        assert state is not None
-
         validate_transition(
             enums.TrxStatus,
-            from_state=state.status,
+            from_state=self.trx_status,
             to_state=status
         )
 
@@ -341,6 +339,7 @@ class ProductTransactionStatus(UUIDModel, TimeStampedModel):
     reference = GenericForeignKey('reference_ct', 'reference_id')
 
     class Meta:
+        ordering = ('-date_created',)
         verbose_name = _('transaction status')
         verbose_name_plural = _('transaction statuses')
 

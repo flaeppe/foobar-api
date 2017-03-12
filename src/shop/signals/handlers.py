@@ -6,8 +6,7 @@ from .. import models, enums
 
 @receiver(post_save, sender=models.ProductTransactionStatus)
 def update_cached_product_quantity(sender, instance, created, **kwargs):
-    # This should never happen and we need to make sure we throw an
-    # error if someone try to change a status. (Misplaced?)
+    # Updating product transaction statuses is not supported
     assert created
 
     trx_obj = instance.trx
