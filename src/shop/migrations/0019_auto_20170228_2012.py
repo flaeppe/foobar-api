@@ -19,4 +19,16 @@ class Migration(migrations.Migration):
             field=models.SmallIntegerField(choices=[(0, 'MONDAY'), (1, 'TUESDAY'), (2, 'WEDNESDAY'), (3, 'THURSDAY'), (4, 'FRIDAY'), (5, 'SATURDAY'), (6, 'SUNDAY')], default=0),
             preserve_default=False,
         ),
+        migrations.RemoveField(
+            model_name='producttransaction',
+            name='reference_ct',
+        ),
+        migrations.RemoveField(
+            model_name='producttransaction',
+            name='reference_id',
+        ),
+        migrations.RemoveField(
+            model_name='producttransaction',
+            name='trx_status',
+        ),
     ]

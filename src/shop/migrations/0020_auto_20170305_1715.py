@@ -25,6 +25,40 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
+        migrations.AlterModelOptions(
+            name='producttransactionstatus',
+            options={'ordering': ('-date_created',), 'verbose_name': 'transaction status', 'verbose_name_plural': 'transaction statuses'},
+        ),
+        migrations.AlterField(
+            model_name='delivery',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
+        migrations.AlterField(
+            model_name='product',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
+        migrations.AlterField(
+            model_name='producttransaction',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
+        migrations.AlterField(
+            model_name='producttransactionstatus',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
+        migrations.AlterField(
+            model_name='stocktake',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
+        migrations.AlterField(
+            model_name='supplierproduct',
+            name='date_created',
+            field=models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created'),
+        ),
         migrations.AddField(
             model_name='basestocklevel',
             name='product',
