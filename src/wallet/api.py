@@ -1,5 +1,5 @@
 from django.db import transaction
-from .enums import TrxType
+from .enums import TrxStatus
 from . import models, exceptions
 
 
@@ -43,14 +43,13 @@ def set_balance(owner_id, new_balance, reference=None):
     return None, difference
 
 
-def list_transactions(owner_id, currency, trx_type=None, direction=None,
+def list_transactions(owner_id, currency, status=None, direction=None,
                       start=None, limit=None):
     """Return a list of transactions matching the criteria."""
     wallet_obj = get_wallet(owner_id, currency)
     qs = models.Wallet.objects.get(id=wallet_obj.id).transactions
-    if trx_type is not None:
-        # qs = qs.filter(trx_type=trx_type)
-        qs = qs.by_status(trx_type)
+    if status is not None:
+        qs = qs.by_status(status)
     if direction is not None:
         qs = qs.by_direction(direction)
     return qs.all()[start:limit]
@@ -72,14 +71,14 @@ def get_transactions_by_ref(reference):
 def cancel_transaction(trx_id):
     """Cancels a transaction."""
     trx_obj = models.WalletTransaction.objects.get(id=trx_id)
-    trx_obj.set_status(TrxType.CANCELLATION)
+    trx_obj.set_status(TrxStatus.CANCELLATION)
     return trx_obj
 
 
 def finalize_transaction(trx_id):
     """Finalizes a transaction."""
     trx_obj = models.WalletTransaction.objects.get(id=trx_id)
-    trx_obj.set_status(TrxType.FINALIZED)
+    trx_obj.set_status(TrxStatus.FINALIZED)
     return trx_obj
 
 
@@ -100,7 +99,7 @@ def withdraw(owner_id, amount, reference=None):
         raise exceptions.InsufficientFunds
     qs = models.Wallet.objects.get(id=wallet_obj.id).transactions
     trx_obj = qs.create(amount=(-amount), reference=reference)
-    trx_obj.set_status(TrxType.PENDING)
+    trx_obj.set_status(TrxStatus.PENDING)
     return trx_obj
 
 
@@ -112,7 +111,7 @@ def deposit(owner_id, amount, reference=None):
     qs = models.Wallet.objects.get(id=wallet_obj.id).transactions
 
     trx_obj = qs.create(amount=amount, reference=reference)
-    trx_obj.set_status(TrxType.PENDING)
+    trx_obj.set_status(TrxStatus.PENDING)
     return trx_obj
 
 

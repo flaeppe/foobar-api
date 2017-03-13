@@ -6,7 +6,7 @@ class TrxDirection(enum.Enum):
     OUTGOING = 1
 
 
-class TrxType(enum.Enum):
+class TrxStatus(enum.Enum):
     FINALIZED = 0
     PENDING = 1
     CANCELLATION = 2

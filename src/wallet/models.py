@@ -55,23 +55,22 @@ class WalletTrxsQuerySet(models.QuerySet):
         return stamps.values_list('latest_stamp', flat=True)
 
     def by_status(self, status=None):
+        status_query = {}
         if status is not None:
             status_query = {'states__status': status}
-        else:
-            status_query = {}
-
-        return self.filter(
+        qs = self.filter(
             states__date_created__in=self._latest_stamps(),
             **status_query
         )
+        return qs
 
     def countable(self):
         return self.filter(
-            (Q(amount__lt=0) & Q(states__status=enums.TrxType.PENDING))
-            | (Q(amount__gte=0) & Q(states__status=enums.TrxType.FINALIZED)),
+            (Q(amount__lt=0) & Q(states__status=enums.TrxStatus.PENDING))
+            | (Q(amount__gte=0) & Q(states__status=enums.TrxStatus.FINALIZED)),
         ).exclude(
             # Exclude the ones that have CANCELLATION as last status
-            Q(states__status=enums.TrxType.CANCELLATION),
+            Q(states__status=enums.TrxStatus.CANCELLATION),
             states__date_created__in=self._latest_stamps()
         )
 
@@ -101,7 +100,7 @@ class WalletTransaction(UUIDModel, TimeStampedModel):
         verbose_name_plural = _('transactions')
 
     @property
-    def trx_type(self):
+    def status(self):
         # As a transaction should never _not_ be in a state, we want
         # latest to throw an exception when this does not happen
         state = self.states.latest('date_created')
@@ -111,7 +110,7 @@ class WalletTransaction(UUIDModel, TimeStampedModel):
         state = self.states.order_by('-date_created').first()
 
         validate_transition(
-            enums.TrxType,
+            enums.TrxStatus,
             from_state=state.status if state is not None else state,
             to_state=status
         )
@@ -137,15 +136,15 @@ class WalletTransaction(UUIDModel, TimeStampedModel):
 class WalletTransactionStatus(UUIDModel, TimeStampedModel):
     trx = models.ForeignKey('WalletTransaction', related_name='states')
     status = EnumIntegerField(
-        enums.TrxType,
+        enums.TrxStatus,
         verbose_name=_('type'),
-        default=enums.TrxType.PENDING
+        default=enums.TrxStatus.PENDING
     )
 
     @property
     def signed_amount(self):
         """Returns the amount in a signed form based on the trx type"""
-        if self.status == enums.TrxType.CANCELLATION:
+        if self.status == enums.TrxStatus.CANCELLATION:
             return -self.trx.amount
 
         return self.trx.amount
@@ -160,11 +159,11 @@ class WalletTransactionStatus(UUIDModel, TimeStampedModel):
         currency = self.trx.wallet.currency
         if self.trx.amount < Money(0, currency or settings.DEFAULT_CURRENCY):
             # Outgoing
-            ACCEPTED = (enums.TrxType.PENDING, enums.TrxType.CANCELLATION)
+            ACCEPTED = (enums.TrxStatus.PENDING, enums.TrxStatus.CANCELLATION)
 
         else:
             # Incoming
-            ACCEPTED = (enums.TrxType.FINALIZED,)
+            ACCEPTED = (enums.TrxStatus.FINALIZED,)
 
         return self.status in ACCEPTED
 

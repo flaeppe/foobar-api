@@ -9,7 +9,7 @@ from utils.enums import get_direction_multiplier
 def update_wallet_balance(sender, instance, from_status,
                           to_status, direction, **kwargs):
     multiplier = get_direction_multiplier(
-        enum=enums.TrxType,
+        enum=enums.TrxStatus,
         from_state=from_status,
         to_state=to_status,
         direction=direction

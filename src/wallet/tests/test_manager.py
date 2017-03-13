@@ -97,14 +97,14 @@ class TransactionManagerTests(TestCase):
         result = models.WalletTransaction.objects.by_status(status=None)
         self.assertEqual(result.count(), 12)
 
-        status = enums.TrxType.PENDING
+        status = enums.TrxStatus.PENDING
         result = models.WalletTransaction.objects.by_status(status=status)
         self.assertEqual(result.count(), 3)
 
-        status = enums.TrxType.FINALIZED
+        status = enums.TrxStatus.FINALIZED
         result = models.WalletTransaction.objects.by_status(status=status)
         self.assertEqual(result.count(), 4)
 
-        status = enums.TrxType.CANCELLATION
+        status = enums.TrxStatus.CANCELLATION
         result = models.WalletTransaction.objects.by_status(status=status)
         self.assertEqual(result.count(), 5)
