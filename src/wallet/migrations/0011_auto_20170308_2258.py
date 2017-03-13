@@ -7,6 +7,13 @@ from django.db import migrations, models
 import djmoney.models.fields
 import enumfields.fields
 import wallet.enums
+import enum
+
+
+class TrxType(enum.Enum):
+    FINALIZED = 0
+    PENDING = 1
+    CANCELLATION = 2
 
 
 class Migration(migrations.Migration):
@@ -33,6 +40,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='wallettransaction',
             name='trx_type',
-            field=enumfields.fields.EnumIntegerField(default=0, enum=wallet.enums.TrxType, verbose_name='type'),
+            field=enumfields.fields.EnumIntegerField(default=0, enum=TrxType, verbose_name='type'),
         ),
     ]

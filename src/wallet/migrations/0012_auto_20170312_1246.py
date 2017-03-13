@@ -110,7 +110,7 @@ class Migration(migrations.Migration):
                 ('date_created', models.DateTimeField(blank=True, default=django.utils.timezone.now, editable=False, null=True, verbose_name='date created')),
                 ('date_modified', models.DateTimeField(auto_now=True, null=True, verbose_name='date modified')),
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('status', enumfields.fields.EnumIntegerField(default=1, enum=wallet.enums.TrxType, verbose_name='type')),
+                ('status', enumfields.fields.EnumIntegerField(default=1, enum=TrxType, verbose_name='type')),
             ],
             options={
                 'verbose_name': 'transaction status',
