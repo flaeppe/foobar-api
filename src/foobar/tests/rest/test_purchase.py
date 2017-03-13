@@ -3,12 +3,8 @@ from django.core.urlresolvers import reverse_lazy as reverse
 from django.conf import settings
 from rest_framework import status
 from shop.tests.factories import ProductFactory
-from wallet.tests.factories import (
-    finalize_trx,
-    WalletFactory,
-    WalletTrxFactory
-)
-from wallet import api as wallet_api
+from wallet.tests.factories import WalletFactory, WalletTrxFactory
+from wallet import enums, api as wallet_api
 from foobar.rest.fields import MoneyField
 from ..factories import AccountFactory, PurchaseFactory
 from .base import AuthenticatedAPITestCase
@@ -30,10 +26,13 @@ class TestPurchaseAPI(AuthenticatedAPITestCase):
     def test_purchase(self):
         account_obj = AccountFactory.create()
         wallet_obj = WalletFactory.create(owner_id=account_obj.id)
-        finalize_trx(WalletTrxFactory.create(
+        trx_obj = WalletTrxFactory.create(
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
-        ))
+        )
+        trx_obj.set_status(enums.TrxStatus.PENDING)
+        trx_obj.set_status(enums.TrxStatus.FINALIZED)
+
         product_obj1 = ProductFactory.create(
             name='Billys Ooriginal',
             price=Money(13, 'SEK')

@@ -3,11 +3,8 @@ from django.conf import settings
 from foobar import api, enums, models
 from foobar.wallet import api as wallet_api
 from shop.tests.factories import ProductFactory
-from wallet.tests.factories import (
-    finalize_trx,
-    WalletFactory,
-    WalletTrxFactory
-)
+from wallet.tests.factories import WalletFactory, WalletTrxFactory
+from wallet import enums as wallet_enums
 from .factories import AccountFactory, CardFactory
 from moneyed import Money
 from django.contrib.auth.models import User
@@ -69,10 +66,13 @@ class FoobarAPITest(TestCase):
     def test_purchase(self):
         account_obj = AccountFactory.create()
         wallet_obj = WalletFactory.create(owner_id=account_obj.id)
-        finalize_trx(WalletTrxFactory.create(
+        trx_obj = WalletTrxFactory.create(
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
-        ))
+        )
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
+
         product_obj1 = ProductFactory.create(
             code='1337733113370',
             name='Billys Original',
@@ -116,10 +116,13 @@ class FoobarAPITest(TestCase):
     def test_cancel_card_purchase(self):
         account_obj = AccountFactory.create()
         wallet_obj = WalletFactory.create(owner_id=account_obj.id)
-        finalize_trx(WalletTrxFactory.create(
+        trx_obj = WalletTrxFactory.create(
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
-        ))
+        )
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
+
         product_obj1 = ProductFactory.create(
             code='1337733113370',
             name='Billys Original',
@@ -209,7 +212,9 @@ class FoobarAPITest(TestCase):
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
         )
-        finalize_trx(trx_obj)
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
+
         product_obj1 = ProductFactory.create(
             code='1337733113370',
             name='Billys Original',
@@ -225,10 +230,13 @@ class FoobarAPITest(TestCase):
     def test_list_purchases(self):
         account_obj = AccountFactory.create()
         wallet_obj = WalletFactory.create(owner_id=account_obj.id)
-        finalize_trx(WalletTrxFactory.create(
+        trx_obj = WalletTrxFactory.create(
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
-        ))
+        )
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
+
         product_obj1 = ProductFactory.create(
             code='1337733113370',
             name='Billys Original',
@@ -247,7 +255,8 @@ class FoobarAPITest(TestCase):
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
         )
-        finalize_trx(trx_obj)
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
 
         user_obj = User.objects.create_superuser(
             'the_baconator', 'bacon@foobar.com', '123'
@@ -301,7 +310,8 @@ class FoobarAPITest(TestCase):
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
         )
-        finalize_trx(trx_obj)
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
 
         user_obj = User.objects.create_superuser(
             'the_baconator', 'bacon@foobar.com', '123'
@@ -349,7 +359,8 @@ class FoobarAPITest(TestCase):
             wallet=wallet_obj,
             amount=Money(1000, 'SEK')
         )
-        finalize_trx(trx_obj)
+        trx_obj.set_status(wallet_enums.TrxStatus.PENDING)
+        trx_obj.set_status(wallet_enums.TrxStatus.FINALIZED)
 
         product_obj1 = ProductFactory.create(
             code='8437438439393',

@@ -2,13 +2,7 @@ from django.test import TestCase
 from moneyed import Money
 
 from .. import enums, models
-from .factories import (
-    cancel_trx,
-    finalize_trx,
-    pend_trx,
-    WalletTrxFactory,
-    WalletFactory
-)
+from .factories import WalletFactory, WalletTrxFactory
 
 
 class TransactionManagerTests(TestCase):
@@ -22,7 +16,8 @@ class TransactionManagerTests(TestCase):
             size=2,
             amount=Money(100, wallet_obj.currency)
         )
-        [finalize_trx(x) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.FINALIZED) for x in trxs]
         # INCOMING PENDING -> NOT Supposed to count
         # 0
         trxs = WalletTrxFactory.create_batch(
@@ -30,21 +25,22 @@ class TransactionManagerTests(TestCase):
             size=2,
             amount=Money(100, wallet_obj.currency)
         )
-        [pend_trx(x) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
         # OUTGOING FINALIZED -> Supposed to count
         # -200
         trxs = WalletTrxFactory.create_batch(
             size=2,
             amount=-Money(100, wallet_obj.currency)
         )
-        [finalize_trx(x, direction=enums.TrxDirection.OUTGOING) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.FINALIZED) for x in trxs]
         # OUTGOING PENDING -> Supposed to count
         # -20
         trxs = WalletTrxFactory.create_batch(
             size=2,
             amount=-Money(10, wallet_obj.currency)
         )
-        [pend_trx(x, direction=enums.TrxDirection.OUTGOING) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
         # INCOMING CANCELED -> NOT Supposed to count
         # 0
         trxs = WalletTrxFactory.create_batch(
@@ -52,7 +48,9 @@ class TransactionManagerTests(TestCase):
             size=2,
             amount=Money(200, wallet_obj.currency)
         )
-        [cancel_trx(x, pend=True) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.FINALIZED) for x in trxs]
+        [x.set_status(enums.TrxStatus.CANCELLATION) for x in trxs]
         # OUTGOING CANCELED -> NOT Supposed to count
         # 0
         trxs = WalletTrxFactory.create_batch(
@@ -60,7 +58,8 @@ class TransactionManagerTests(TestCase):
             size=2,
             amount=-Money(200, wallet_obj.currency)
         )
-        [cancel_trx(x, enums.TrxDirection.OUTGOING, pend=False) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.CANCELLATION) for x in trxs]
 
         result = models.WalletTransaction.objects.countable()
         self.assertEqual(result.count(), 6)
@@ -80,19 +79,22 @@ class TransactionManagerTests(TestCase):
             size=3,
             amount=Money(100, wallet_obj.currency)
         )
-        [pend_trx(x) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
 
         trxs = WalletTrxFactory.create_batch(
             size=4,
             amount=Money(50, wallet_obj.currency)
         )
-        [finalize_trx(x) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.FINALIZED) for x in trxs]
 
         trxs = WalletTrxFactory.create_batch(
             size=5,
             amount=Money(33, wallet_obj.currency)
         )
-        [cancel_trx(x) for x in trxs]
+        [x.set_status(enums.TrxStatus.PENDING) for x in trxs]
+        [x.set_status(enums.TrxStatus.FINALIZED) for x in trxs]
+        [x.set_status(enums.TrxStatus.CANCELLATION) for x in trxs]
 
         result = models.WalletTransaction.objects.by_status(status=None)
         self.assertEqual(result.count(), 12)
