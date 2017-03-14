@@ -11,6 +11,10 @@ class PurchaseStatus(enum.Enum):
         PENDING: (FINALIZED, CANCELED)
     }
 
+    @classmethod
+    def members(cls):
+        return [k for k in cls.__members__ if not k.startswith('_')]
+
 
 class TrxType(enum.Enum):
     CORRECTION = 0

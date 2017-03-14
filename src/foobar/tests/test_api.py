@@ -87,7 +87,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.create_purchase(account_obj.id, products)
+        purchase_obj, _ = api.create_purchase(account_obj.id, products)
         self.assertEqual(purchase_obj.status, enums.PurchaseStatus.PENDING)
         self.assertEqual(purchase_obj.amount, Money(69, 'SEK'))
 
@@ -137,7 +137,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.create_purchase(account_obj.id, products)
+        purchase_obj, _ = api.create_purchase(account_obj.id, products)
         api.cancel_purchase(purchase_obj.id)
         purchase_obj, _ = api.get_purchase(purchase_obj.id)
         self.assertEqual(purchase_obj.status, enums.PurchaseStatus.CANCELED)
@@ -165,7 +165,7 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        purchase_obj = api.create_purchase(None, products)
+        purchase_obj, _ = api.create_purchase(None, products)
         api.cancel_purchase(purchase_obj.id)
         purchase_obj, _ = api.get_purchase(purchase_obj.id)
         self.assertEqual(purchase_obj.status, enums.PurchaseStatus.CANCELED)
@@ -191,8 +191,9 @@ class FoobarAPITest(TestCase):
             (product_obj1.id, 3),
             (product_obj2.id, 1),
         ]
-        trx_obj = api.create_purchase(account_id=None, products=products)
-        self.assertEqual(trx_obj.status, enums.PurchaseStatus.PENDING)
+        purchase_obj, _ = api.create_purchase(account_id=None,
+                                              products=products)
+        self.assertEqual(purchase_obj.status, enums.PurchaseStatus.PENDING)
         product_obj1.refresh_from_db()
         product_obj2.refresh_from_db()
         self.assertEqual(product_obj1.qty, -3)
@@ -200,8 +201,8 @@ class FoobarAPITest(TestCase):
         _, balance = wallet_api.get_balance(settings.FOOBAR_CASH_WALLET)
         self.assertEqual(balance, Money(0, 'SEK'))
 
-        trx_obj = api.finalize_purchase(trx_obj.pk)
-        self.assertEqual(trx_obj.status, enums.PurchaseStatus.FINALIZED)
+        purchase_obj = api.finalize_purchase(purchase_obj.pk)
+        self.assertEqual(purchase_obj.status, enums.PurchaseStatus.FINALIZED)
         _, balance = wallet_api.get_balance(settings.FOOBAR_CASH_WALLET)
         self.assertEqual(balance, Money(69, 'SEK'))
 
@@ -223,8 +224,8 @@ class FoobarAPITest(TestCase):
         products = [
             (product_obj1.id, 3),
         ]
-        purchase_obj = api.create_purchase(account_obj.id, products)
-        obj = api.get_purchase(purchase_obj.id)
+        purchase_obj, _ = api.create_purchase(account_obj.id, products)
+        obj, _ = api.get_purchase(purchase_obj.id)
         self.assertIsNotNone(obj)
 
     def test_list_purchases(self):
@@ -369,7 +370,7 @@ class FoobarAPITest(TestCase):
         )
         products = [(product_obj1.pk, 3)]
 
-        pending_obj = api.create_purchase(
+        pending_obj, _ = api.create_purchase(
             account_id=account_obj.pk,
             products=products
         )

@@ -5,6 +5,7 @@ from django.utils import timezone
 from .models import (
     Account, Card, Purchase, PurchaseItem, WalletLogEntry
 )
+from foobar.exceptions import InvalidTransition
 from foobar.wallet import api as wallet_api
 from shop import api as shop_api
 from shop import enums as shop_enums
@@ -63,6 +64,7 @@ def create_purchase(account_id, products):
     assert all(q > 0 for _, q in products)
     # make sure that all the products exist
     assert all(p is not None for p, q in products)
+    items = []
     for product_obj, qty in products:
         trx_obj = PurchaseItem.objects.create(
             purchase=purchase_obj,
@@ -76,6 +78,7 @@ def create_purchase(account_id, products):
             qty=-qty,
             reference=trx_obj
         )
+        items.append(trx_obj)
     zero_money = Money(0, settings.DEFAULT_CURRENCY)
     total_amount = sum((p.price * q for p, q in products), zero_money)
     if account_id is not None:
@@ -91,7 +94,7 @@ def create_purchase(account_id, products):
             amount=total_amount,
             reference=purchase_obj.id
         )
-    return purchase_obj
+    return purchase_obj, items
 
 
 @transaction.atomic
@@ -144,13 +147,22 @@ def cancel_purchase(purchase_id, force=False):
         wallet_api.cancel_transaction(trx_obj.id)
 
 
+def update_purchase_status(purchase_id, status):
+    if status.value == enums.PurchaseStatus.FINALIZED.value:
+        finalize_purchase(purchase_id)
+    elif status.value == enums.PurchaseStatus.CANCELED.value:
+        cancel_purchase(purchase_id)
+    else:
+        raise InvalidTransition('Non-existing status {}'.format(status))
+
+
 def get_purchase(purchase_id):
     """Returns a purchase together with the purchased items in it."""
     try:
         purchase_obj = Purchase.objects.get(id=purchase_id)
         return purchase_obj, purchase_obj.items.all()
     except Purchase.DoesNotExist:
-        return None
+        return None, []
 
 
 def list_purchases(account_id, start=None, stop=None, **kwargs):
