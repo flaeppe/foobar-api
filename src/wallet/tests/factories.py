@@ -2,11 +2,7 @@ import uuid
 import factory.fuzzy
 from .. import models, enums
 from moneyed import Money
-
-
-class FuzzyMoney(factory.fuzzy.FuzzyDecimal):
-    def fuzz(self):
-        return Money(super().fuzz(), 'SEK')
+from utils.factories import FuzzyMoney
 
 
 class WalletFactory(factory.django.DjangoModelFactory):

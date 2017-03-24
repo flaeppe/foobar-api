@@ -1,7 +1,6 @@
-import random
 import factory.fuzzy
 from .. import models
-from moneyed import Money
+from utils.factories import FuzzyMoney
 
 
 class AccountFactory(factory.django.DjangoModelFactory):
@@ -32,10 +31,7 @@ class PurchaseItemFactory(factory.django.DjangoModelFactory):
     purchase = factory.SubFactory(PurchaseFactory)
     product_id = ''
     qty = 1
-
-    @factory.lazy_attribute
-    def amount(self):
-        return Money(random.randint(1, 100), 'SEK')
+    amount = FuzzyMoney(0, 1000)
 
 
 class PurchaseStatusFactory(factory.django.DjangoModelFactory):

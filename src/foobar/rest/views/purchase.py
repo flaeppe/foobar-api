@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from authtoken.permissions import HasTokenScope
 
 from foobar import api
+from ..serializers.account import AccountQuerySerializer
 from ..serializers.purchase import (
     PurchaseSerializer,
     PurchaseStatusSerializer,
@@ -16,7 +17,11 @@ class PurchaseAPI(viewsets.ViewSet):
     permission_classes = (HasTokenScope('purchases'),)
 
     def list(self, request):
-        purchases = api.list_purchases(request.query_params.get('account_id'))
+        serializer = AccountQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        card_id = request.query_params.get('card_id')
+        account_obj = api.get_account_by_card(card_id=card_id)
+        purchases = api.list_purchases(account_obj.pk)
         serializer = PurchaseSerializer(purchases, many=True)
         return Response(serializer.data)
 
@@ -51,7 +56,10 @@ class PurchaseAPI(viewsets.ViewSet):
         if purchase_obj is None:
             raise NotFound
 
-        serializer = PurchaseStatusSerializer(data=request.data)
+        serializer = PurchaseStatusSerializer(
+            data=request.data,
+            context={'purchase': purchase_obj}
+        )
         serializer.is_valid(raise_exception=True)
         api.update_purchase_status(purchase_obj.pk, serializer.validated_data)
 

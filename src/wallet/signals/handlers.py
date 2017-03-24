@@ -2,13 +2,12 @@ from django.dispatch import receiver
 
 from .. import models, enums
 from .signals import status_change
-from utils.enums import get_direction_multiplier
 
 
 @receiver(status_change, sender=models.WalletTransactionStatus)
 def update_wallet_balance(sender, instance, from_status,
                           to_status, direction, **kwargs):
-    multiplier = get_direction_multiplier(
+    multiplier = enums.get_direction_multiplier(
         enum=enums.TrxStatus,
         from_state=from_status,
         to_state=to_status,

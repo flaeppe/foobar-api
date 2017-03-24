@@ -7,7 +7,12 @@ from wallet.tests.factories import WalletFactory, WalletTrxFactory
 from wallet import enums, api as wallet_api
 from foobar.rest.fields import MoneyField
 from foobar.enums import PurchaseStatus
-from ..factories import AccountFactory, PurchaseFactory, PurchaseItemFactory
+from ..factories import (
+    AccountFactory,
+    CardFactory,
+    PurchaseFactory,
+    PurchaseItemFactory
+)
 from .base import AuthenticatedAPITestCase
 from moneyed import Money
 
@@ -133,6 +138,7 @@ class TestPurchaseAPI(AuthenticatedAPITestCase):
     def test_list_purchases(self):
         purchase_obj1 = PurchaseFactory.create()
         purchase_obj2 = PurchaseFactory.create(account=purchase_obj1.account)
+        card_obj = CardFactory.create(account=purchase_obj1.account)
         product_obj1 = ProductFactory.create(
             name='Billys Original',
             price=Money(13, 'SEK')
@@ -152,7 +158,7 @@ class TestPurchaseAPI(AuthenticatedAPITestCase):
             amount=product_obj2.price
         )
         url = reverse('api:purchases-list')
-        query_params = {'account_id': purchase_obj1.account.id}
+        query_params = {'card_id': card_obj.number}
         response = self.api_client.get(url, query_params)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)

@@ -159,13 +159,11 @@ class WalletTransactionStatus(UUIDModel, TimeStampedModel):
         currency = self.trx.wallet.currency
         if self.trx.amount < Money(0, currency or settings.DEFAULT_CURRENCY):
             # Outgoing
-            ACCEPTED = (enums.TrxStatus.PENDING, enums.TrxStatus.CANCELLATION)
-
+            return self.status in (enums.TrxStatus.PENDING,
+                                   enums.TrxStatus.CANCELLATION)
         else:
             # Incoming
-            ACCEPTED = (enums.TrxStatus.FINALIZED,)
-
-        return self.status in ACCEPTED
+            return self.status in (enums.TrxStatus.FINALIZED,)
 
     class Meta:
         unique_together = ('trx', 'status')

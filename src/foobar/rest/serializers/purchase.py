@@ -1,8 +1,10 @@
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
+from foobar.exceptions import InvalidTransition
 from foobar.enums import PurchaseStatus
 from shop import api as shop_api
 from ..fields import MoneyField, IntEnumField
+from utils.enums import validate_transition
 
 
 class PurchaseRequestSerializer(serializers.Serializer):
@@ -49,8 +51,9 @@ class PurchaseSerializer(serializers.Serializer):
     status = IntEnumField()
 
     def to_representation(self, instance):
-        purchase_obj = super().to_representation(instance[0])
-        item_serializer = PurchaseItemSerializer(instance[1], many=True)
+        purchase, items = instance
+        purchase_obj = super().to_representation(purchase)
+        item_serializer = PurchaseItemSerializer(items, many=True)
         purchase_obj['items'] = item_serializer.data
         return purchase_obj
 
@@ -63,10 +66,18 @@ class PurchaseStatusSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 _('Status named: {} not found.'.format(value))
             )
-        if value.upper() == 'PENDING':
-            raise serializers.ValidationError(
-                _('Illegal updating existing purchase to a PENDING status')
+        try:
+            purchase_obj = self.context.get('purchase')
+            validate_transition(
+                PurchaseStatus,
+                from_state=purchase_obj.status,
+                to_state=getattr(PurchaseStatus, value)
             )
+        except InvalidTransition:
+            msg = _('Illegal updating existing purchase to a {} status'.format(
+                value
+            ))
+            raise serializers.ValidationError(msg)
         return value
 
     def to_internal_value(self, data):
