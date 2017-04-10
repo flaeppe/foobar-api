@@ -36,8 +36,12 @@ def forwards_func(apps, schema_editor):
     # if we directly import it, it'll be the wrong version
     transactions = apps.get_model('shop', 'producttransaction')
     status_model = apps.get_model('shop', 'producttransactionstatus')
+    Product = apps.get_model('shop', 'product')
 
     qs = transactions.objects.all()
+    products = Product.objects.all()
+    pre_qty = products.aggregate(amount=models.Sum('qty'))['amount']
+    products.update(qty=0)
 
     WalletTransaction = apps.get_model("wallet", "WalletTransaction")
     pre_balance = WalletTransaction.objects \
@@ -67,6 +71,9 @@ def forwards_func(apps, schema_editor):
             reference_ct=trx.reference_ct,
             reference_id=trx.reference_id
         )
+
+    post_qty = products.aggregate(amount=models.Sum('qty'))['amount']
+    assert pre_qty == post_qty
 
     post_balance = WalletTransaction.objects \
         .exclude(trx_type=TrxType.PENDING) \
