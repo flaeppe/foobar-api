@@ -41,7 +41,6 @@ def forwards_func(apps, schema_editor):
     qs = transactions.objects.all()
     products = Product.objects.all()
     pre_qty = products.aggregate(amount=models.Sum('qty'))['amount']
-    products.update(qty=0)
 
     WalletTransaction = apps.get_model("wallet", "WalletTransaction")
     pre_balance = WalletTransaction.objects \
