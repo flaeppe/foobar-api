@@ -38,8 +38,8 @@ class FoobarAPITest(TestCase):
         # Create an account
         account_obj = AccountFactory.create()
         obj2 = api.get_account(account_id=account_obj.id)
-
-        self.assertIsNotNone(obj2)
+        obj3 = api.get_account(id=account_obj.id)
+        self.assertEqual(obj2.id, obj3.id)
 
     def test_get_account_by_card(self):
         # Retrieve an non-existent account
@@ -426,4 +426,3 @@ class FoobarAPITest(TestCase):
         with self.assertRaises(InvalidTransition):
             api.update_purchase_status(purchase3.id,
                                        enums.PurchaseStatus.PENDING)
-
