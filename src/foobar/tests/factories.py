@@ -1,3 +1,4 @@
+import uuid
 import factory.fuzzy
 from .. import models
 from utils.factories import FuzzyMoney
@@ -29,7 +30,7 @@ class PurchaseItemFactory(factory.django.DjangoModelFactory):
         model = models.PurchaseItem
 
     purchase = factory.SubFactory(PurchaseFactory)
-    product_id = ''
+    product_id = factory.fuzzy.FuzzyAttribute(uuid.uuid4)
     qty = 1
     amount = FuzzyMoney(0, 1000)
 

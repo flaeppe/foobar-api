@@ -5,7 +5,7 @@ from django.utils import timezone
 from .models import (
     Account, Card, Purchase, PurchaseItem, WalletLogEntry
 )
-from foobar.exceptions import InvalidTransition
+from utils.exceptions import InvalidTransition
 from foobar.wallet import api as wallet_api
 from shop import api as shop_api
 from shop import enums as shop_enums
@@ -148,9 +148,9 @@ def cancel_purchase(purchase_id, force=False):
 
 
 def update_purchase_status(purchase_id, status):
-    if status.value == enums.PurchaseStatus.FINALIZED.value:
+    if status == enums.PurchaseStatus.FINALIZED:
         finalize_purchase(purchase_id)
-    elif status.value == enums.PurchaseStatus.CANCELED.value:
+    elif status == enums.PurchaseStatus.CANCELED:
         cancel_purchase(purchase_id)
     else:
         raise InvalidTransition('Non-existing status {}'.format(status))

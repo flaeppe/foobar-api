@@ -1,14 +1,16 @@
+from unittest import mock
+import uuid
 from django.test import TestCase
 from django.conf import settings
 from foobar import api, enums, models
 from foobar.wallet import api as wallet_api
+from utils.exceptions import InvalidTransition
 from shop.tests.factories import ProductFactory
 from wallet.tests.factories import WalletFactory, WalletTrxFactory
 from wallet import enums as wallet_enums
-from .factories import AccountFactory, CardFactory
+from .factories import AccountFactory, CardFactory, PurchaseItemFactory
 from moneyed import Money
 from django.contrib.auth.models import User
-import uuid
 
 
 class FoobarAPITest(TestCase):
@@ -404,3 +406,24 @@ class FoobarAPITest(TestCase):
         self.assertEqual(item.qty, 3)
         self.assertEqual(item.amount.amount, 42)
         self.assertEqual(item.product_id, product_obj1.pk)
+
+    @mock.patch('foobar.api.finalize_purchase')
+    @mock.patch('foobar.api.cancel_purchase')
+    def test_update_purchase_status(self, mock_cancel_purchase,
+                                    mock_finalize_purchase):
+        item1 = PurchaseItemFactory()
+        purchase1 = item1.purchase
+        api.update_purchase_status(purchase1.id,
+                                   enums.PurchaseStatus.FINALIZED)
+        mock_finalize_purchase.assert_called_once_with(purchase1.id)
+        item2 = PurchaseItemFactory()
+        purchase2 = item2.purchase
+        api.update_purchase_status(purchase2.id,
+                                   enums.PurchaseStatus.CANCELED)
+        mock_cancel_purchase.assert_called_once_with(purchase2.id)
+        item3 = PurchaseItemFactory()
+        purchase3 = item3.purchase
+        with self.assertRaises(InvalidTransition):
+            api.update_purchase_status(purchase3.id,
+                                       enums.PurchaseStatus.PENDING)
+

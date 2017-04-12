@@ -1,5 +1,5 @@
 import enum
-from foobar.exceptions import InvalidTransition
+from utils.exceptions import InvalidTransition
 
 
 class TrxDirection(enum.Enum):

@@ -1,7 +1,7 @@
 import enum
 from django.test import TestCase
 
-from ..exceptions import InvalidTransition
+from utils.exceptions import InvalidTransition
 from utils.enums import validate_transition
 
 

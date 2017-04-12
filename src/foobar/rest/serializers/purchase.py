@@ -1,6 +1,6 @@
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-from foobar.exceptions import InvalidTransition
+from utils.exceptions import InvalidTransition
 from foobar.enums import PurchaseStatus
 from shop import api as shop_api
 from ..fields import MoneyField, IntEnumField

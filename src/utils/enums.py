@@ -1,4 +1,4 @@
-from foobar.exceptions import InvalidTransition
+from utils.exceptions import InvalidTransition
 
 
 def validate_transition(enum, from_state, to_state):

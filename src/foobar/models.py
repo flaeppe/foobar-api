@@ -61,8 +61,11 @@ class Purchase(UUIDModel, TimeStampedModel):
     def status(self):
         # As a purchase should never _not_ be in a state, we want
         # latest to throw an exception when this does not happen
-        state = self.states.latest('date_created')
-        return state.status
+        try:
+            state = self.states.latest('date_created')
+            return state.status
+        except PurchaseStatus.DoesNotExist:
+            return None
 
     def set_status(self, status):
         validate_transition(
